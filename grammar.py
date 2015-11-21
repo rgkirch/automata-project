@@ -101,15 +101,15 @@ class Grammar:
          
 
 if __name__ == '__main__':
-    g = Grammar()
 
-    try:
-        with open(sys.argv[1], "r") as f:
-            for line in f:
-                g.addRule(line)
-    except IndexError:
+    if(len(sys.argv) > 1):
+        for name in sys.argv[1:]:
+            g = Grammar()
+            with open(name, "r") as f:
+                for line in f:
+                    g.addRule(line)
+            print(g)
+    else:
+        g = Grammar()
         g.prompt()
-    except:
-        print("unknown error", file=sys.stderr)
-
-    print(g)
+        print(g)
