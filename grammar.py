@@ -2,19 +2,19 @@ from collections import OrderedDict
 import sys
 
 class Grammar:
-    terminals = "()+*x$"
-    rules = \
-    {
-        "S":["E$"],
-        "A":["+TA"],
-        "E":["TA"],
-        "B":["*FB"],
-        "T":["FB"],
-        "F":["(E)", "x"]
-    }
+#terminals = ["+*$"]
+#rules = \
+#{
+#    "S":["E$"],
+#    "A":["+TA"],
+#    "E":["TA"],
+#    "B":["*FB"],
+#    "T":["FB"],
+#    "F":["(E)", "x"]
+#}
     def __init__(self):
         self.grammar = OrderedDict()
-        #self.terminals = []
+        self.terminals = []
         self.parseTable = {}
         self.startSymbol = ""
 
@@ -100,10 +100,8 @@ def prompt():
     print("The start symbol of the grammar will be set to the nonterminal on the lhs of the first production entered.") 
 
 if __name__ == '__main__':
-    #prompt()   
-    g = Grammar()#.buildGrammar()    
-    for non in g.rules.keys():
-        print("first({0}) = {1}".format(non, g.first(g.rules[non])))
-    #print(g)
+    prompt()   
+    g = Grammar().buildGrammar()    
+    print(g)
     
     
