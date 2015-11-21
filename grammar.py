@@ -2,16 +2,16 @@ from collections import OrderedDict
 import sys
 
 class Grammar:
-#terminals = ["+*$"]
-#rules = \
-#{
-#    "S":["E$"],
-#    "A":["+TA"],
-#    "E":["TA"],
-#    "B":["*FB"],
-#    "T":["FB"],
-#    "F":["(E)", "x"]
-#}
+    terminals = ["+*$"]
+    rules = \
+    {
+        "S":["E$"],
+        "A":["+TA"],
+        "E":["TA"],
+        "B":["*FB"],
+        "T":["FB"],
+        "F":["(E)", "x"]
+    }
     def __init__(self):
         self.grammar = OrderedDict()
         #self.terminals = []
@@ -74,7 +74,8 @@ class Grammar:
                         firsts.append(c)
                     # c is nonterminal, as for first of c
                     elif c in self.rules.keys():
-                        first.append(self.first(self.rules[c]))
+                        firsts += self.first(self.rules[c])
+                        #break
                         # else continue, check for c as next char in string
                     else:
                         print("error, character {0} not found as terminal or nonterminal\n".format(c), file=sys.stderr)
@@ -93,8 +94,9 @@ def prompt():
     print("The start symbol of the grammar will be set to the nonterminal on the lhs of the first production entered.") 
 
 if __name__ == '__main__':
-    prompt()   
-    g = Grammar().buildGrammar()    
-    print(g)
+    #prompt()   
+    g = Grammar()#.buildGrammar()    
+    g.first(g.rules["S"])
+    #print(g)
     
     
