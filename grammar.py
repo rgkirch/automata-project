@@ -146,15 +146,16 @@ class Grammar:
          
 
 if __name__ == '__main__':
-    prompt()  
     g = Grammar()
-    if len(sys.argv[1:]):
-        with open(sys.argv[1], 'r') as f:
-            lines = f.readlines()
-            for line in lines: 
-                g.addRule(line.strip())
-    else:             
-        g.buildGrammar()    
+
+    if(len(sys.argv) > 1):
+        for name in sys.argv[1:]:
+            with open(name, "r") as f:
+                for line in f:
+                    g.addRule(line)
+    else:
+        g.prompt()
+
     print(g)
     print(g.grammar["E"])
     print(g.isNullable("E"))
