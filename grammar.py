@@ -1,6 +1,8 @@
 from collections import OrderedDict
+from functools import reduce
 import sys
 
+class Grammar:
 #terminals = ["+*$"]
 #rules = \
 #{
@@ -11,13 +13,19 @@ import sys
 #    "T":["FB"],
 #    "F":["(E)", "x"]
 #}
-
-class Grammar:
     def __init__(self):
         self.grammar = OrderedDict()
         self.terminals = []
         self.parseTable = {}
         self.startSymbol = ""
+        self.firsts = {}
+        self.follows = {}
+
+    def prompt(self):
+        print("A tool for building LL(1) parse tables based on a grammar defined by the user.")
+        print("Enter productions of the form 'S -> xA' where x is a terminal and A is a nonterminal")
+        print("The start symbol of the grammar will be set to the nonterminal on the lhs of the first production entered.") 
+        self.buildGrammar()    
 
     def addRule(self, rule):
         try:
@@ -55,33 +63,75 @@ class Grammar:
         while ruleInput != 'e':
             self.addRule(ruleInput)
             ruleInput = input("> ").strip()
+
+        for key in self.grammar.keys():
+            self.firsts[key] = "" 
+            self.follows[key] = ""
+
         return self
 
     # nonterminal -> ["production", "production"]
     def first(self, productions):
-        """Accepts a list of strings, treats each string as a production and compiles a new string that holds all of the possible terminal characters. Returns empty string if nullable."""
-        # if epsilon, return false so parent frame moves on to next character(terminal/nonterminal)
+        """Accepts a list of strings, treats each string as a production and compiles a new string that holds all of the possible terminal characters. Returns empty string if not non nullable."""
+        # if list is empty, [""] will return true, catch epsilon later
         if not productions:
             # dunno if null or empty string - being optimistic and returning "", relies on logic of caller
             return ""
         else:
             firsts = ""
             for prod in productions:
+                # won't run on "" epsilon empty string
                 for c in prod:
-                    print("char",c)
                     # if c is terminal then return c
                     if c in self.terminals:
-                        firsts.append(c)
+                        firsts += c
+                        # stop looping through single production, move onto next production if exists
+                        break
                     # c is nonterminal, as for first of c
                     elif c in self.rules.keys():
-                        f = self.first(gram.rules[c])
+                        # if nothing returned, move on to next one
+                        f = self.first(self.rules[c])
+                        # if terminal returned, don't look at next terminals/nonterminals
                         if f:
-                            firsts.append(f)
+                            firsts += f
+                            break
                         # else continue, check for c as next char in string
                     else:
                         print("error, character {0} not found as terminal or nonterminal\n".format(c), file=sys.stderr)
-                else:
-                    return ""
+                        sys.exit(-1)
+            return firsts
+
+    def follows(self, nonterm):
+        followset = []
+        if nonterm == self.startSymbol:
+            followset.append("$")
+
+        # walk through all nonterms
+        for (key,rules) in self.grammar.items():
+            # walk through all rules in current nonterm
+            for prod in rules:
+                for i,char in enumerate(prod[:-1]):
+                    if char.isupper():
+                        pass                       
+  
+    def isNullable(self, t):
+        if t not in self.grammar:
+            return False
+        
+        isTermNullable = False 
+        # walk through all productions for nonterm 't'
+        for i,prod in enumerate(self.grammar[t]):
+            isProdNull = True 
+            # if prod is epsilon, nullable
+            if prod != '':
+                for term in prod:
+                    if term != t:
+                        isProdNull = isProdNull and self.isNullable(term)
+                    else: 
+                        isProdNull = isProdNull and reduce(lambda x,y: x and y, map(self.isNullable, filter(lambda x: x != term, self.grammar[t])),True)
+            isTermNullable = isTermNullable or isProdNull
+        return isTermNullable
+                
 
     def __str__(self):
         rules = []
@@ -90,14 +140,17 @@ class Grammar:
             rules.append(rule)
         return "Grammar\n   {0}".format("\n   ".join(rules))         
          
-def prompt():
-    print("A tool for building LL(1) parse tables based on a grammar defined by the user.")
-    print("Enter productions of the form 'S -> xA' where x is a terminal and A is a nonterminal")
-    print("The start symbol of the grammar will be set to the nonterminal on the lhs of the first production entered.") 
 
 if __name__ == '__main__':
-    prompt()   
-    g = Grammar().buildGrammar()    
-    print(g)
-    
-    
+    g = Grammar()
+    if len(sys.argv[1:]):
+        with open(sys.argv[1], 'r') as f:
+            lines = f.readlines()
+            for line in lines: 
+                g.addRule(line.strip())
+    else:             
+        g.prompt()    
+
+    # test follows
+    for term in g.grammar.keys():
+        print("IsNullable({0}) = ".format(term), g.isNullable(term))
