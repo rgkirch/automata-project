@@ -18,6 +18,12 @@ class Grammar:
         self.parseTable = {}
         self.startSymbol = ""
 
+    def prompt(self):
+        print("A tool for building LL(1) parse tables based on a grammar defined by the user.")
+        print("Enter productions of the form 'S -> xA' where x is a terminal and A is a nonterminal")
+        print("The start symbol of the grammar will be set to the nonterminal on the lhs of the first production entered.") 
+        self.buildGrammar()    
+
     def addRule(self, rule):
         try:
             [nonterm,rhs] = [r.strip() for r in rule.split("->")]
@@ -54,7 +60,6 @@ class Grammar:
         while ruleInput != 'e':
             self.addRule(ruleInput)
             ruleInput = input("> ").strip()
-        return self
 
     # nonterminal -> ["production", "production"]
     def first(self, productions):
@@ -94,14 +99,17 @@ class Grammar:
             rules.append(rule)
         return "Grammar\n   {0}".format("\n   ".join(rules))         
          
-def prompt():
-    print("A tool for building LL(1) parse tables based on a grammar defined by the user.")
-    print("Enter productions of the form 'S -> xA' where x is a terminal and A is a nonterminal")
-    print("The start symbol of the grammar will be set to the nonterminal on the lhs of the first production entered.") 
 
 if __name__ == '__main__':
-    prompt()   
-    g = Grammar().buildGrammar()    
+    g = Grammar()
+
+    try:
+        with open(sys.argv[1], "r") as f:
+            for line in f:
+                g.addRule(line)
+    except IndexError:
+        g.prompt()
+    except:
+        print("unknown error", file=sys.stderr)
+
     print(g)
-    
-    
