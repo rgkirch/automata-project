@@ -1,4 +1,5 @@
 from collections import OrderedDict
+from functools import reduce
 import sys
 
 class Grammar:
@@ -17,6 +18,8 @@ class Grammar:
         self.terminals = []
         self.parseTable = {}
         self.startSymbol = ""
+        self.firsts = {}
+        self.follows = {}
 
     def prompt(self):
         print("A tool for building LL(1) parse tables based on a grammar defined by the user.")
@@ -61,6 +64,12 @@ class Grammar:
             self.addRule(ruleInput)
             ruleInput = input("> ").strip()
 
+        for key in self.grammar.keys():
+            self.firsts[key] = "" 
+            self.follows[key] = ""
+
+        return self
+
     # nonterminal -> ["production", "production"]
     def first(self, productions):
         """Accepts a list of strings, treats each string as a production and compiles a new string that holds all of the possible terminal characters. Returns empty string if not non nullable."""
@@ -95,6 +104,39 @@ class Grammar:
     def buildParseTable(self):
         pass
 
+    def follows(self, nonterm):
+        followset = []
+        if nonterm == self.startSymbol:
+            followset.append("$")
+
+        # walk through all nonterms
+        for (key,rules) in self.grammar.items():
+            # walk through all rules in current nonterm
+            for prod in rules:
+                for i,char in enumerate(prod[:-1]):
+                    if char.isupper():
+                        pass                       
+  
+    def isNullable(self, t):
+        if t not in self.grammar:
+            return False
+        
+        isTermNullable = []
+        # walk through all productions for nonterm 't'
+        for i,prod in enumerate(self.grammar[t]):
+            print("Checking prod:{0} if null".format(prod))
+            isProdNull = True 
+            # if prod is epsilon, nullable
+            if prod != '':
+                for term in prod:
+                    if term != t:
+                        isProdNull = isProdNull and self.isNullable(term)
+                    else:
+                        isProdNull = isProdNull and reduce(lambda x,y: x or y, map(self.isNullable,self.grammar[t][i+1:]), False)       
+            print("    isnull? {0}".format(isProdNull))
+            isTermNullable.append(isProdNull)
+        return reduce(lambda x,y: x or y, isTermNullable,True)
+                
     def __str__(self):
         rules = []
         for (key,val) in self.grammar.items():
@@ -104,15 +146,16 @@ class Grammar:
          
 
 if __name__ == '__main__':
-
-    if(len(sys.argv) > 1):
-        for name in sys.argv[1:]:
-            g = Grammar()
-            with open(name, "r") as f:
-                for line in f:
-                    g.addRule(line)
-            print(g)
-    else:
-        g = Grammar()
-        g.prompt()
-        print(g)
+    prompt()  
+    g = Grammar()
+    if len(sys.argv[1:]):
+        with open(sys.argv[1], 'r') as f:
+            lines = f.readlines()
+            for line in lines: 
+                g.addRule(line.strip())
+    else:             
+        g.buildGrammar()    
+    print(g)
+    print(g.grammar["E"])
+    print(g.isNullable("E"))
+  
