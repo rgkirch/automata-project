@@ -21,6 +21,12 @@ class Grammar:
         self.firsts = {}
         self.follows = {}
 
+    def prompt(self):
+        print("A tool for building LL(1) parse tables based on a grammar defined by the user.")
+        print("Enter productions of the form 'S -> xA' where x is a terminal and A is a nonterminal")
+        print("The start symbol of the grammar will be set to the nonterminal on the lhs of the first production entered.") 
+        self.buildGrammar()    
+
     def addRule(self, rule):
         try:
             [nonterm,rhs] = [r.strip() for r in rule.split("->")]
@@ -66,7 +72,7 @@ class Grammar:
 
     # nonterminal -> ["production", "production"]
     def first(self, productions):
-        """Accepts a list of strings, treats each string as a production and compiles a new string that holds all of the possible terminal characters. Returns empty string if nullable."""
+        """Accepts a list of strings, treats each string as a production and compiles a new string that holds all of the possible terminal characters. Returns empty string if not non nullable."""
         # if list is empty, [""] will return true, catch epsilon later
         if not productions:
             # dunno if null or empty string - being optimistic and returning "", relies on logic of caller
@@ -76,16 +82,23 @@ class Grammar:
             for prod in productions:
                 # won't run on "" epsilon empty string
                 for c in prod:
-                    print("char",c)
                     # if c is terminal then return c
                     if c in self.terminals:
-                        firsts.append(c)
+                        firsts += c
+                        # stop looping through single production, move onto next production if exists
+                        break
                     # c is nonterminal, as for first of c
                     elif c in self.rules.keys():
-                        first.append(self.first(self.rules[c]))
+                        # if nothing returned, move on to next one
+                        f = self.first(self.rules[c])
+                        # if terminal returned, don't look at next terminals/nonterminals
+                        if f:
+                            firsts += f
+                            break
                         # else continue, check for c as next char in string
                     else:
                         print("error, character {0} not found as terminal or nonterminal\n".format(c), file=sys.stderr)
+                        sys.exit(-1)
             return firsts
 
     def follows(self, nonterm):
@@ -129,10 +142,6 @@ class Grammar:
             rules.append(rule)
         return "Grammar\n   {0}".format("\n   ".join(rules))         
          
-def prompt():
-    print("A tool for building LL(1) parse tables based on a grammar defined by the user.")
-    print("Enter productions of the form 'S -> xA' where x is a terminal and A is a nonterminal")
-    print("The start symbol of the grammar will be set to the nonterminal on the lhs of the first production entered.") 
 
 if __name__ == '__main__':
     prompt()  
@@ -148,5 +157,3 @@ if __name__ == '__main__':
     print(g.grammar["E"])
     print(g.isNullable("E"))
   
-    
-    
