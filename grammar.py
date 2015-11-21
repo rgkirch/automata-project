@@ -57,7 +57,9 @@ class Grammar:
             ruleInput = input("> ").strip()
         return self
 
+    # nonterminal -> ["production", "production"]
     def first(self, productions):
+        """Accepts a list of strings, treats each string as a production and compiles a new string that holds all of the possible terminal characters. Returns empty string if nullable."""
         # if epsilon, return false so parent frame moves on to next character(terminal/nonterminal)
         if not productions:
             # dunno if null or empty string - being optimistic and returning "", relies on logic of caller
