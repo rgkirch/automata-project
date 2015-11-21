@@ -118,21 +118,19 @@ class Grammar:
         if t not in self.grammar:
             return False
         
-        isTermNullable = []
+        isTermNullable = False 
         # walk through all productions for nonterm 't'
         for i,prod in enumerate(self.grammar[t]):
-            print("Checking prod:{0} if null".format(prod))
             isProdNull = True 
             # if prod is epsilon, nullable
             if prod != '':
                 for term in prod:
                     if term != t:
                         isProdNull = isProdNull and self.isNullable(term)
-                    else:
-                        isProdNull = isProdNull and reduce(lambda x,y: x or y, map(self.isNullable,self.grammar[t][i+1:]), False)       
-            print("    isnull? {0}".format(isProdNull))
-            isTermNullable.append(isProdNull)
-        return reduce(lambda x,y: x or y, isTermNullable,True)
+                    else: 
+                        isProdNull = isProdNull and reduce(lambda x,y: x and y, map(self.isNullable, filter(lambda x: x != term, self.grammar[t])),True)
+            isTermNullable = isTermNullable or isProdNull
+        return isTermNullable
                 
 
     def __str__(self):
@@ -144,7 +142,6 @@ class Grammar:
          
 
 if __name__ == '__main__':
-    prompt()  
     g = Grammar()
     if len(sys.argv[1:]):
         with open(sys.argv[1], 'r') as f:
@@ -152,8 +149,8 @@ if __name__ == '__main__':
             for line in lines: 
                 g.addRule(line.strip())
     else:             
-        g.buildGrammar()    
-    print(g)
-    print(g.grammar["E"])
-    print(g.isNullable("E"))
-  
+        g.prompt()    
+
+    # test follows
+    for term in g.grammar.keys():
+        print("IsNullable({0}) = ".format(term), g.isNullable(term))
