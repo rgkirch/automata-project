@@ -1,6 +1,7 @@
 from collections import OrderedDict
 import sys
 
+class Grammar:
 #terminals = ["+*$"]
 #rules = \
 #{
@@ -11,11 +12,9 @@ import sys
 #    "T":["FB"],
 #    "F":["(E)", "x"]
 #}
-
-class Grammar:
     def __init__(self):
         self.grammar = OrderedDict()
-        self.terminals = []
+        #self.terminals = []
         self.parseTable = {}
         self.startSymbol = ""
 
@@ -60,13 +59,14 @@ class Grammar:
     # nonterminal -> ["production", "production"]
     def first(self, productions):
         """Accepts a list of strings, treats each string as a production and compiles a new string that holds all of the possible terminal characters. Returns empty string if nullable."""
-        # if epsilon, return false so parent frame moves on to next character(terminal/nonterminal)
+        # if list is empty, [""] will return true, catch epsilon later
         if not productions:
             # dunno if null or empty string - being optimistic and returning "", relies on logic of caller
             return ""
         else:
             firsts = ""
             for prod in productions:
+                # won't run on "" epsilon empty string
                 for c in prod:
                     print("char",c)
                     # if c is terminal then return c
@@ -74,14 +74,11 @@ class Grammar:
                         firsts.append(c)
                     # c is nonterminal, as for first of c
                     elif c in self.rules.keys():
-                        f = self.first(gram.rules[c])
-                        if f:
-                            firsts.append(f)
+                        first.append(self.first(self.rules[c]))
                         # else continue, check for c as next char in string
                     else:
                         print("error, character {0} not found as terminal or nonterminal\n".format(c), file=sys.stderr)
-                else:
-                    return ""
+            return firsts
 
     def __str__(self):
         rules = []
