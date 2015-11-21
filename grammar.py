@@ -18,6 +18,8 @@ class Grammar:
         self.terminals = []
         self.parseTable = {}
         self.startSymbol = ""
+        self.firsts = {}
+        self.follows = {}
 
     def addRule(self, rule):
         try:
@@ -55,6 +57,11 @@ class Grammar:
         while ruleInput != 'e':
             self.addRule(ruleInput)
             ruleInput = input("> ").strip()
+
+        for key in self.grammar.keys():
+            self.firsts[key] = "" 
+            self.follows[key] = ""
+
         return self
 
     def first(self, productions):
@@ -81,6 +88,9 @@ class Grammar:
                 else:
                     return ""
 
+    def follows(self, nonterm):
+        pass
+ 
     def __str__(self):
         rules = []
         for (key,val) in self.grammar.items():
