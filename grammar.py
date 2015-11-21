@@ -79,9 +79,9 @@ class Grammar:
                         # stop looping through single production, move onto next production if exists
                         break
                     # c is nonterminal, as for first of c
-                    elif c in self.rules.keys():
+                    elif c in self.grammar.keys():
                         # if nothing returned, move on to next one
-                        f = self.first(self.rules[c])
+                        f = self.first(self.grammar[c])
                         # if terminal returned, don't look at next terminals/nonterminals
                         if f:
                             firsts += f
@@ -91,6 +91,9 @@ class Grammar:
                         print("error, character {0} not found as terminal or nonterminal\n".format(c), file=sys.stderr)
                         sys.exit(-1)
             return firsts
+
+    def buildParseTable(self):
+        pass
 
     def __str__(self):
         rules = []
