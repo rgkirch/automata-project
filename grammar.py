@@ -80,7 +80,8 @@ class Grammar:
         else:
             firsts = ""
             for prod in productions:
-                # won't run on "" epsilon empty string
+                if not prod:
+                    print("you missed the epsilon")
                 for c in prod:
                     # if c is terminal then return c
                     if c in self.terminals:
@@ -88,9 +89,9 @@ class Grammar:
                         # stop looping through single production, move onto next production if exists
                         break
                     # c is nonterminal, as for first of c
-                    elif c in self.rules.keys():
+                    elif c in self.grammar.keys():
                         # if nothing returned, move on to next one
-                        f = self.first(self.rules[c])
+                        f = self.first(self.grammar[c])
                         # if terminal returned, don't look at next terminals/nonterminals
                         if f:
                             firsts += f
@@ -152,5 +153,8 @@ if __name__ == '__main__':
         g.prompt()    
 
     # test follows
+    print("grammar ", g.grammar)
+    print("terminals  ", g.terminals)
     for term in g.grammar.keys():
         print("IsNullable({0}) = ".format(term), g.isNullable(term))
+        print("first({0}) = ".format(term), g.first(g.grammar[term]))
