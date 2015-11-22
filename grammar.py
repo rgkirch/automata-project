@@ -70,6 +70,9 @@ class Grammar:
 
         return self
 
+    def buildParseTable(self):
+        pass
+
     # nonterminal -> ["production", "production"]
     def first(self, productions):
         """Accepts a list of strings, treats each string as a production and compiles a new string that holds all of the possible terminal characters. Returns empty string if not non nullable."""
