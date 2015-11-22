@@ -1,0 +1,7 @@
+Firsts(S) =  ['(', 'a', 'b', 'c']
+Firsts(E) =  ['+']
+Firsts(T) =  ['(', 'a', 'b', 'c']
+Firsts(R) =  ['(', 'a', 'b', 'c']
+Firsts(F) =  ['(', 'a', 'b', 'c']
+Firsts(G) =  ['*']
+Firsts(P) =  ['(', 'a', 'b', 'c']
