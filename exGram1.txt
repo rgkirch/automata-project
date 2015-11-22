@@ -1,0 +1,13 @@
+S -> TE$
+E -> +E
+E -> 
+T -> FR
+R -> T
+R -> 
+F -> PG
+G -> *G 
+G -> 
+P -> (E)
+P -> a
+P -> b
+P -> c
