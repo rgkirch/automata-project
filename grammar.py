@@ -147,35 +147,29 @@ class Grammar:
             for (key,rules) in self.grammar.items():
 		# walk through all rules in current nonterm
                 for prod in rules:
-                    print("Checking production '{0}'".format(prod))
-                    if prod == '':
-                        continue
                     lenProd = len(prod)
                     for i,char in enumerate(prod[:-1]):
 			# if char is nonterminal
-                        print("   Looking @ char '{0}'".format(char))
                         if char in self.grammar:
                             curr = i+1
-                            while curr < lenProd:
-                                if self.isNullable(prod[curr]):
-                                    print("      {0} is nullable".format(prod[curr]))
-                                    if char == prod[-2]:
-                                        self.followsets[char].update(self.followsets[key])
-                                    print("       adding firstset {0} and follows {1}".format(self.firstsets[prod[curr]], self.followsets[prod[curr]]))
-                                    self.followsets[char].update(self.followsets[prod[curr]])
+                            # if next sym is nonterminal
+                            if self.isNullable(prod[curr]):
+                                # if curr char is 2nd to last nonterm
+                                if char == prod[-2]: 
+                                    # add follow sets of A in A -> aBC, if char == B and C is nullable
+                                    self.followsets[char].update(self.followsets[key])
+                                self.followsets[char].update(self.followsets[prod[curr]])
+                                self.followsets[char].update(self.firstsets[prod[curr]])
+                            else:
+                                # if next sym is nonnullable nonterminal
+                                if prod[curr] in self.grammar:
+                                    # add firstset to current symbols follow set
                                     self.followsets[char].update(self.firstsets[prod[curr]])
                                 else:
-                                    # if next sym is nonnullable nonterminal
-                                    if prod[curr] in self.grammar:
-                                        # add firstset to current symbols follow set
-                                        self.followsets[char].update(self.firstsets[prod[curr]])
-                                    else:
-                                        # else if its a terminal, simply add to follows
-                                        self.followsets[char].add(prod[curr])
-                                    break                                                     
-                                curr += 1                
+                                    # else if its a terminal, simply add to follows
+                                    self.followsets[char].add(prod[curr])
   
-                    if prod[-1] in self.grammar:
+                    if lenProd > 0 and prod[-1] in self.grammar:
                         self.followsets[prod[-1]].update(self.followsets[key])
             # if no changes were made, break out of loop
             if currfollows == self.followsets:
