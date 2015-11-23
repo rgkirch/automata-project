@@ -5,16 +5,7 @@ import stacktrace
 import copy
 
 class Grammar:
-#terminals = ["+*$"]
-#rules = \
-#{
-#    "S":["E$"],
-#    "A":["+TA"],
-#    "E":["TA"],
-#    "B":["*FB"],
-#    "T":["FB"],
-#    "F":["(E)", "x"]
-#}
+    
     def __init__(self):
         self.grammar = OrderedDict()
         self.terminals = []
@@ -72,9 +63,10 @@ class Grammar:
                 self.addRule(ruleInput)
                 ruleInput = input("> ").strip()
 
-        for key in self.grammar.keys():
-            self.firstsets[key] = self.first(key) 
-            self.followsets[key] = set()
+        for (nonterm,prods) in self.grammar.items():
+            print(nonterm)
+            self.firstsets[nonterm] = self.first(nonterm) 
+            self.followsets[nonterm] = set()
 
         self.follows()               
  
@@ -111,7 +103,7 @@ class Grammar:
         firstset = set()
         for prod in self.grammar[var]: 
             for term in prod:
-                if self.isNullable(term):
+                if self.isNullable(term,[term]):
                     firstset.update(self.first(term))
                 else:
 		    # if term is terminal then add term to
@@ -127,7 +119,7 @@ class Grammar:
         """Works on right hand side of production."""
         firstset = set()
         for term in prod:
-            if self.isNullable(term):
+            if self.isNullable(term,[]):
                 firstset.update(self.first(term))
             else:
                 # if term is terminal then add term to
@@ -153,7 +145,7 @@ class Grammar:
                         if char in self.grammar:
                             curr = i+1
                             # if next sym is nonterminal
-                            if self.isNullable(prod[curr]):
+                            if self.isNullable(prod[curr],[]):
                                 # if curr char is 2nd to last nonterm
                                 if char == prod[-2]: 
                                     # add follow sets of A in A -> aBC, if char == B and C is nullable
@@ -175,7 +167,7 @@ class Grammar:
             if currfollows == self.followsets:
                 break
    
-    def isNullable(self, var):
+    def isNullable(self, var, seen):
         if var in self.terminals:
             return False
         
@@ -186,13 +178,19 @@ class Grammar:
             # if prod is epsilon, nullable
             if prod != '':
                 for term in prod:
-                    if term != var:
-                        isProdNull = isProdNull and self.isNullable(term)
-                    else: 
-                        isProdNull = isProdNull and reduce(lambda x,y: x and y, map(self.isNullable, filter(lambda x: x != term, self.grammar[var])),True)
+                    if term not in seen:
+                        isProdNull = isProdNull and self.isNullable(term, seen+[term])
+                    if not isProdNull:  
+                        break
             isTermNullable = isTermNullable or isProdNull
         return isTermNullable
                 
+    def isProductionNullable(self,prod,lhs):
+        isProdNull = True
+        for sym in prod:
+            if lhs not in prod:
+                isProdNull = isProdNull and self.isNullable(sym,[])
+        return isProdNull       
 
     def __str__(self):
         rules = []
