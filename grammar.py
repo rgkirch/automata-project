@@ -53,6 +53,7 @@ class Grammar:
                     self.terminals.append(char)
 
             # adds rule to grammar
+            rhs = rhs.strip("$")
             if nonterm in self.grammar:
                 self.grammar[nonterm].append(rhs)
             else:
@@ -221,11 +222,11 @@ if __name__ == '__main__':
         with open(sys.argv[1], 'r') as f:
             g.buildGrammar(f)
             g.buildParseTable()
-            #inputstring = input("Enter a string to check (empty string to quit): ")
-            #while inputstring:
-            #    trace = stacktrace.run_stacktrace(g, inputstring)
-            #    stacktrace.printtrace(trace, 1)
-            #    inputstring = input("Enter a string to check (empty string to quit): ")
+            inputstring = input("Enter a string to check (empty string to quit): ")
+            while inputstring:
+                trace = stacktrace.run_stacktrace(g, inputstring)
+                stacktrace.printtrace(trace, 1)
+                inputstring = input("Enter a string to check (empty string to quit): ")
     else:             
         g.prompt()
         g.buildGrammar()

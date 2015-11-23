@@ -1,5 +1,5 @@
+import sys, time
 import grammar
-import time
 
 # representation of LL(1) parse table, for testing purposes
 exampleParseTable1 = { 
@@ -94,11 +94,23 @@ def prompt():
 if __name__ == "__main__":
     prompt()
     g = grammar.Grammar()
-    g.parseTable = exampleParseTable2
-    g.startSymbol = startSymbol2 
-    g.terminals = terminals2 
-    inputstring = input("Enter a string to check (empty string to quit): ")
-    while inputstring:
-        trace = run_stacktrace(g, inputstring)
-        printtrace(trace,0 )
+    if len(sys.argv[1:]):
+        with open(sys.argv[1], 'r') as f:
+            g.buildGrammar(f)
+            g.buildParseTable()
+            inputstring = input("Enter a string to check (empty string to quit): ")
+            while inputstring:
+                trace = run_stacktrace(g, inputstring)
+                printtrace(trace, 0)
+                inputstring = input("Enter a string to check (empty string to quit): ")
+    else:
+        g.buildGrammar()
+        g.buildParseTable()
+        #g.parseTable = exampleParseTable2
+        #g.startSymbol = startSymbol2
+        #g.terminals = terminals2
         inputstring = input("Enter a string to check (empty string to quit): ")
+        while inputstring:
+            trace = run_stacktrace(g, inputstring)
+            printtrace(trace, 0)
+            inputstring = input("Enter a string to check (empty string to quit): ")
