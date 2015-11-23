@@ -37,6 +37,8 @@ def run_stacktrace(grammar, inputstring):
     # track of the state of the stack and input string at each step
     steps = [(inputstring, ''.join(stack[::-1]))] 
     while True: 
+        #print("stack", stack)
+        #print("input", inputstring)
         if not stack and inputstring[0] == '$':
             steps.pop()
             steps.append((inputstring, 'accept'))
