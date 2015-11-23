@@ -25,7 +25,6 @@ class Grammar:
         print("A tool for building LL(1) parse tables based on a grammar defined by the user.")
         print("Enter productions of the form 'S -> xA' where x is a terminal and A is a nonterminal")
         print("The start symbol of the grammar will be set to the nonterminal on the lhs of the first production entered.") 
-        self.buildGrammar()    
 
     def addRule(self, rule):
         try:
@@ -61,7 +60,7 @@ class Grammar:
             print("Error: Rule entered in improper format")
             print("'{0}' should be of the form {1}".format(rule, "S -> A"))
 
-    def buildGrammar(self, infile):
+    def buildGrammar(self, infile=None):
         if infile:
             for line in infile.readlines():
                  self.addRule(line.strip())
@@ -72,7 +71,7 @@ class Grammar:
                 ruleInput = input("> ").strip()
 
         for key in self.grammar.keys():
-            self.firstsets[key] = self.firsts(key) 
+            self.firstsets[key] = self.first(key) 
             self.followsets[key] = set()
 
         self.follows()               
@@ -80,10 +79,23 @@ class Grammar:
         return self
 
     def buildParseTable(self):
-        pass
+        for (nonterminal,production) in self.grammar.items():
+            for terminal in self.first(nonterminal):
+                try:
+                    self.parseTable[nonterminal]
+                    try: 
+                        self.parseTable[nonterminal][terminal]
+                        print("conflict in parse table")
+                        sys.exit(-1)
+                    except KeyError:
+                        self.parseTable[nonterminal][terminal] = self.grammar[nonterminal]
+                except KeyError:
+                    self.parseTable[nonterminal] = dict()
+                    self.parseTable[nonterminal][terminal] = self.grammar[nonterminal]
+
 
     # nonterminal -> ["production", "production"]
-    def firsts(self, var):
+    def first(self, var):
         """Accepts a list of strings, treats each string as a production and \\
            compiles a new string that holds all of the possible terminal \\
            characters. Returns empty string if not non nullable."""
@@ -91,23 +103,37 @@ class Grammar:
         for prod in self.grammar[var]: 
             for term in prod:
                 if self.isNullable(term):
-                    firstset.update(self.firsts(term))
+                    firstset.update(self.first(term))
                 else:
 		    # if term is terminal then add term to
                     # firstset and go to new production
                     if term in self.terminals:
                         firstset.add(term)
                     else:
-                        firstset.update(self.firsts(term))
+                        firstset.update(self.first(term))
                     break
         #if var not in self.terminals:
         #    self.firstsets[var] = firstset
         return firstset      
+
+    def firstOfProduction(self, production):
+        """Works on right hand side of production."""
+        firstset = set()
+        for term in prod:
+            if self.isNullable(term):
+                firstset.update(self.first(term))
+            else:
+                # if term is terminal then add term to
+                # firstset and go to new production
+                if term in self.terminals:
+                    firstset.add(term)
+                else:
+                    firstset.update(self.first(term))
+                break
+        return firstset      
  
     def follows(self):
-        
         self.followsets[self.startSymbol].add("$")
-        
         while True:
             currfollows = dict(self.followsets)
             # walk through all nonterms
@@ -167,14 +193,18 @@ if __name__ == '__main__':
     if len(sys.argv[1:]):
         with open(sys.argv[1], 'r') as f:
             g.buildGrammar(f)
+            g.buildParseTable()
     else:             
         g.prompt()
-        g.buildGrammar(None)    
+        g.buildGrammar()
+        g.buildParseTable()
 
     # test follows
-    print("grammar ", g.grammar)
-    print("terminals  ", g.terminals)
+    #print("grammar ", g.grammar)
+    print("Terminals  ", g.terminals)
     for term in g.grammar.keys():
-        print("IsNullable({0}) = ".format(term), g.isNullable(term))
-        print("First({0}) = ".format(term), g.first(g.grammar[term]))
+        print(term, "->", g.grammar[term])
+        print("First({0}) = ".format(term), g.first(term))
+        print("Parsetable =", g.parseTable[term])
         print("Follows({0}) = ".format(term), g.followsets[term])
+        print("IsNullable({0}) = ".format(term), g.isNullable(term))
