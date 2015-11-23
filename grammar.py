@@ -27,6 +27,21 @@ class Grammar:
         print("A tool for building LL(1) parse tables based on a grammar defined by the user.")
         print("Enter productions of the form 'S -> xA' where x is a terminal and A is a nonterminal")
         print("The start symbol of the grammar will be set to the nonterminal on the lhs of the first production entered.") 
+    
+    def printParseTable(self):
+        print("parseTable")
+        print("\t", end="")
+        for term in self.terminals:
+            print(term, "\t", end="")
+        print()
+        for nonterm in self.grammar.keys():
+            print(nonterm, end="")
+            for term in self.terminals:
+                try:
+                    print("\t", self.parseTable[nonterm][term] if self.parseTable[nonterm][term] != "" else "eps", end="")
+                except KeyError:
+                    print("\t", end="")
+            print()
 
     def addRule(self, rule):
         try:
@@ -225,7 +240,7 @@ if __name__ == '__main__':
             inputstring = input("Enter a string to check (empty string to quit): ")
             while inputstring:
                 trace = stacktrace.run_stacktrace(g, inputstring)
-                stacktrace.printtrace(trace, 1)
+                stacktrace.printtrace(trace, 0)
                 inputstring = input("Enter a string to check (empty string to quit): ")
     else:             
         g.prompt()
@@ -242,3 +257,4 @@ if __name__ == '__main__':
         print("Follows({0}) = ".format(term), g.followsets[term])
         print("IsNullable({0}) = ".format(term), g.isNullable(term))
         print()
+    g.printParseTable()
