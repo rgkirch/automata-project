@@ -247,8 +247,6 @@ if __name__ == '__main__':
         g.buildGrammar()
         g.buildParseTable()
 
-    # test follows
-    #print("grammar ", g.grammar)
     print("Terminals  ", g.terminals)
     for term in g.grammar.keys():
         print(term, "->", g.grammar[term])
