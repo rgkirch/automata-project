@@ -1,5 +1,5 @@
 S -> TE$
-E -> +E
+E -> +S
 E -> 
 T -> FR
 R -> T
