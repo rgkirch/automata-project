@@ -80,26 +80,33 @@ class Grammar:
         return self
 
     def buildParseTable(self):
-        for (nonterminal,productions) in self.grammar.items():
-            for prod in productions:
+        for (nonterminal,prod_list) in self.grammar.items():
+            # for each production in the grammar
+            for prod in prod_list:
+                # for each terminal in the first of the right hand side
                 for terminal in self.firstOfProduction(prod):
-                    if terminal == "":
-                        for term in follows(nonterminal):
-                            # add nonterminal -> prod for all term
-                            # if "" is in first(nonterminal) and $ is in follows(nonterminal)
-                                # add nonterminal -> prod for $
-                            pass
-                    try:
-                        self.parseTable[nonterminal]
-                        try: 
-                            self.parseTable[nonterminal][terminal]
-                            print("conflict in parse table")
-                            sys.exit(-1)
-                        except KeyError:
-                            self.parseTable[nonterminal][terminal] = prod
-                    except KeyError:
-                        self.parseTable[nonterminal] = dict()
-                        self.parseTable[nonterminal][terminal] = prod
+                    self.parseTableAddEntry(nonterminal, terminal, prod)
+                # if prod is nullable
+                if all(map(self.isNullable, prod)):
+                    for f in self.followsets[nonterminal]:
+                        self.parseTableAddEntry(nonterminal, f, prod)
+                    if "$" in self.followsets[nonterminal]:
+                        self.parseTableAddEntry(nonterminal, "$", prod)
+
+    def parseTableAddEntry(self, nonterminal, terminal, prod):
+        try:
+            self.parseTable[nonterminal]
+            try: 
+                self.parseTable[nonterminal][terminal]
+                print("conflict in parse table when adding")
+                print("nonterm", nonterminal, "terminal", terminal)
+                print(self.parseTable)
+                sys.exit(-1)
+            except KeyError:
+                self.parseTable[nonterminal][terminal] = prod
+        except KeyError:
+            self.parseTable[nonterminal] = dict()
+            self.parseTable[nonterminal][terminal] = prod
 
 
     # nonterminal -> ["production", "production"]
