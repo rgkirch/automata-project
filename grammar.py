@@ -2,6 +2,7 @@ from collections import OrderedDict
 from functools import reduce
 import sys
 import stacktrace
+import copy
 
 class Grammar:
 #terminals = ["+*$"]
@@ -124,14 +125,9 @@ class Grammar:
                     # firstset and go to new production
                     if term in self.terminals:
                         firstset.add(term)
-                    # from the algo in the pdf
-                    elif term == "":
-                        firstset.add(term)
                     else:
                         firstset.update(self.first(term))
                     break
-        #if var not in self.terminals:
-        #    self.firstsets[var] = firstset
         return firstset      
 
     def firstOfProduction(self, prod):
@@ -153,28 +149,41 @@ class Grammar:
     def follows(self):
         self.followsets[self.startSymbol].add("$")
         while True:
-            currfollows = dict(self.followsets)
+            currfollows = copy.deepcopy(self.followsets)
             # walk through all nonterms
             for (key,rules) in self.grammar.items():
 		# walk through all rules in current nonterm
                 for prod in rules:
+                    print("Checking production '{0}'".format(prod))
                     if prod == '':
                         continue
+                    lenProd = len(prod)
                     for i,char in enumerate(prod[:-1]):
 			# if char is nonterminal
+                        print("   Looking @ char '{0}'".format(char))
                         if char in self.grammar:
-			    # if next char is terminal, add to follows
-                            if prod[i+1] in self.terminals:
-                                self.followsets[char].add(prod[i+1])
-			    # else next char is nonterminal
-                            else:
-                                if self.isNullable(prod[i+1]):
-                                    if prod[i+1] == prod[-1]:
+                            curr = i+1
+                            while curr < lenProd:
+                                if self.isNullable(prod[curr]):
+                                    print("      {0} is nullable".format(prod[curr]))
+                                    if char == prod[-2]:
                                         self.followsets[char].update(self.followsets[key])
-                                self.followsets[char].update(self.firstsets[prod[i+1]])
-			    
-                    if prod[-1] in self.grammar.keys():
-                        self.followsets[prod[-1]].update(self.firstsets[key])
+                                    print("       adding firstset {0} and follows {1}".format(self.firstsets[prod[curr]], self.followsets[prod[curr]]))
+                                    self.followsets[char].update(self.followsets[prod[curr]])
+                                    self.followsets[char].update(self.firstsets[prod[curr]])
+                                else:
+                                    # if next sym is nonnullable nonterminal
+                                    if prod[curr] in self.grammar:
+                                        # add firstset to current symbols follow set
+                                        self.followsets[char].update(self.firstsets[prod[curr]])
+                                    else:
+                                        # else if its a terminal, simply add to follows
+                                        self.followsets[char].add(prod[curr])
+                                    break                                                     
+                                curr += 1                
+  
+                    if prod[-1] in self.grammar:
+                        self.followsets[prod[-1]].update(self.followsets[key])
             # if no changes were made, break out of loop
             if currfollows == self.followsets:
                 break
@@ -212,11 +221,11 @@ if __name__ == '__main__':
         with open(sys.argv[1], 'r') as f:
             g.buildGrammar(f)
             g.buildParseTable()
-            inputstring = input("Enter a string to check (empty string to quit): ")
-            while inputstring:
-                trace = stacktrace.run_stacktrace(g, inputstring)
-                stacktrace.printtrace(trace, 1)
-                inputstring = input("Enter a string to check (empty string to quit): ")
+         #   inputstring = input("Enter a string to check (empty string to quit): ")
+         #   while inputstring:
+         #       trace = stacktrace.run_stacktrace(g, inputstring)
+         #       stacktrace.printtrace(trace, 1)
+         #       inputstring = input("Enter a string to check (empty string to quit): ")
     else:             
         g.prompt()
         g.buildGrammar()
@@ -227,7 +236,8 @@ if __name__ == '__main__':
     print("Terminals  ", g.terminals)
     for term in g.grammar.keys():
         print(term, "->", g.grammar[term])
-        print("First({0}) = ".format(term), g.first(term))
-        print("Parsetable =", g.parseTable[term])
+        print("First({0}) = ".format(term), g.firstsets[term])
+       # print("Parsetable =", g.parseTable[term])
         print("Follows({0}) = ".format(term), g.followsets[term])
-        print("IsNullable({0}) = ".format(term), g.isNullable(term))
+       # print("IsNullable({0}) = ".format(term), g.isNullable(term))
+        print()
