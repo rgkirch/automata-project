@@ -1,6 +1,8 @@
 from collections import OrderedDict
 from functools import reduce
 import sys
+import stacktrace
+import copy
 
 class Grammar:
 #terminals = ["+*$"]
@@ -18,14 +20,13 @@ class Grammar:
         self.terminals = []
         self.parseTable = {}
         self.startSymbol = ""
-        self.firsts = {}
-        self.follows = {}
+        self.firstsets = {}
+        self.followsets = {}
 
     def prompt(self):
         print("A tool for building LL(1) parse tables based on a grammar defined by the user.")
         print("Enter productions of the form 'S -> xA' where x is a terminal and A is a nonterminal")
         print("The start symbol of the grammar will be set to the nonterminal on the lhs of the first production entered.") 
-        self.buildGrammar()    
 
     def addRule(self, rule):
         try:
@@ -42,10 +43,13 @@ class Grammar:
             # set start symbol if first production entered
             if not self.grammar:
                 self.startSymbol = nonterm
+                if rhs[-1] != '$':
+                    print("First rule must end with a '$'")
+                    return
              
             # adds new terminals to list of terminals 
             for char in rhs:
-                if (char.islower() or not char.isalpha) and char not in self.terminals:
+                if (char.islower() or not char.isalpha()) and char not in self.terminals:
                     self.terminals.append(char)
 
             # adds rule to grammar
@@ -58,77 +62,140 @@ class Grammar:
             print("Error: Rule entered in improper format")
             print("'{0}' should be of the form {1}".format(rule, "S -> A"))
 
-    def buildGrammar(self):
-        ruleInput = input("> ").strip()
-        while ruleInput != 'e':
-            self.addRule(ruleInput)
+    def buildGrammar(self, infile=None):
+        if infile:
+            for line in infile.readlines():
+                 self.addRule(line.strip())
+        else:
             ruleInput = input("> ").strip()
+            while ruleInput != 'e':
+                self.addRule(ruleInput)
+                ruleInput = input("> ").strip()
 
         for key in self.grammar.keys():
-            self.firsts[key] = "" 
-            self.follows[key] = ""
+            self.firstsets[key] = self.first(key) 
+            self.followsets[key] = set()
 
+        self.follows()               
+ 
         return self
 
-    # nonterminal -> ["production", "production"]
-    def first(self, productions):
-        """Accepts a list of strings, treats each string as a production and compiles a new string that holds all of the possible terminal characters. Returns empty string if not non nullable."""
-        # if list is empty, [""] will return true, catch epsilon later
-        if not productions:
-            # dunno if null or empty string - being optimistic and returning "", relies on logic of caller
-            return ""
-        else:
-            firsts = ""
+    def buildParseTable(self):
+        for (nonterminal,productions) in self.grammar.items():
             for prod in productions:
-                # won't run on "" epsilon empty string
-                for c in prod:
-                    # if c is terminal then return c
-                    if c in self.terminals:
-                        firsts += c
-                        # stop looping through single production, move onto next production if exists
-                        break
-                    # c is nonterminal, as for first of c
-                    elif c in self.rules.keys():
-                        # if nothing returned, move on to next one
-                        f = self.first(self.rules[c])
-                        # if terminal returned, don't look at next terminals/nonterminals
-                        if f:
-                            firsts += f
-                            break
-                        # else continue, check for c as next char in string
+                for terminal in self.firstOfProduction(prod):
+                    if terminal == "":
+                        for term in follows(nonterminal):
+                            # add nonterminal -> prod for all term
+                            # if "" is in first(nonterminal) and $ is in follows(nonterminal)
+                                # add nonterminal -> prod for $
+                            pass
+                    try:
+                        self.parseTable[nonterminal]
+                        try: 
+                            self.parseTable[nonterminal][terminal]
+                            print("conflict in parse table")
+                            sys.exit(-1)
+                        except KeyError:
+                            self.parseTable[nonterminal][terminal] = prod
+                    except KeyError:
+                        self.parseTable[nonterminal] = dict()
+                        self.parseTable[nonterminal][terminal] = prod
+
+
+    # nonterminal -> ["production", "production"]
+    def first(self, var):
+        """Accepts a list of strings, treats each string as a production and \\
+           compiles a new string that holds all of the possible terminal \\
+           characters. Returns empty string if not non nullable."""
+        firstset = set()
+        for prod in self.grammar[var]: 
+            for term in prod:
+                if self.isNullable(term):
+                    firstset.update(self.first(term))
+                else:
+		    # if term is terminal then add term to
+                    # firstset and go to new production
+                    if term in self.terminals:
+                        firstset.add(term)
                     else:
-                        print("error, character {0} not found as terminal or nonterminal\n".format(c), file=sys.stderr)
-                        sys.exit(-1)
-            return firsts
+                        firstset.update(self.first(term))
+                    break
+        return firstset      
 
-    def follows(self, nonterm):
-        followset = []
-        if nonterm == self.startSymbol:
-            followset.append("$")
-
-        # walk through all nonterms
-        for (key,rules) in self.grammar.items():
-            # walk through all rules in current nonterm
-            for prod in rules:
-                for i,char in enumerate(prod[:-1]):
-                    if char.isupper():
-                        pass                       
+    def firstOfProduction(self, prod):
+        """Works on right hand side of production."""
+        firstset = set()
+        for term in prod:
+            if self.isNullable(term):
+                firstset.update(self.first(term))
+            else:
+                # if term is terminal then add term to
+                # firstset and go to new production
+                if term in self.terminals:
+                    firstset.add(term)
+                else:
+                    firstset.update(self.first(term))
+                break
+        return firstset      
+ 
+    def follows(self):
+        self.followsets[self.startSymbol].add("$")
+        while True:
+            currfollows = copy.deepcopy(self.followsets)
+            # walk through all nonterms
+            for (key,rules) in self.grammar.items():
+		# walk through all rules in current nonterm
+                for prod in rules:
+                    print("Checking production '{0}'".format(prod))
+                    if prod == '':
+                        continue
+                    lenProd = len(prod)
+                    for i,char in enumerate(prod[:-1]):
+			# if char is nonterminal
+                        print("   Looking @ char '{0}'".format(char))
+                        if char in self.grammar:
+                            curr = i+1
+                            while curr < lenProd:
+                                if self.isNullable(prod[curr]):
+                                    print("      {0} is nullable".format(prod[curr]))
+                                    if char == prod[-2]:
+                                        self.followsets[char].update(self.followsets[key])
+                                    print("       adding firstset {0} and follows {1}".format(self.firstsets[prod[curr]], self.followsets[prod[curr]]))
+                                    self.followsets[char].update(self.followsets[prod[curr]])
+                                    self.followsets[char].update(self.firstsets[prod[curr]])
+                                else:
+                                    # if next sym is nonnullable nonterminal
+                                    if prod[curr] in self.grammar:
+                                        # add firstset to current symbols follow set
+                                        self.followsets[char].update(self.firstsets[prod[curr]])
+                                    else:
+                                        # else if its a terminal, simply add to follows
+                                        self.followsets[char].add(prod[curr])
+                                    break                                                     
+                                curr += 1                
   
-    def isNullable(self, t):
-        if t not in self.grammar:
+                    if prod[-1] in self.grammar:
+                        self.followsets[prod[-1]].update(self.followsets[key])
+            # if no changes were made, break out of loop
+            if currfollows == self.followsets:
+                break
+   
+    def isNullable(self, var):
+        if var in self.terminals:
             return False
         
         isTermNullable = False 
-        # walk through all productions for nonterm 't'
-        for i,prod in enumerate(self.grammar[t]):
+        # walk through all productions for nonterm 'var'
+        for i,prod in enumerate(self.grammar[var]):
             isProdNull = True 
             # if prod is epsilon, nullable
             if prod != '':
                 for term in prod:
-                    if term != t:
+                    if term != var:
                         isProdNull = isProdNull and self.isNullable(term)
                     else: 
-                        isProdNull = isProdNull and reduce(lambda x,y: x and y, map(self.isNullable, filter(lambda x: x != term, self.grammar[t])),True)
+                        isProdNull = isProdNull and reduce(lambda x,y: x and y, map(self.isNullable, filter(lambda x: x != term, self.grammar[var])),True)
             isTermNullable = isTermNullable or isProdNull
         return isTermNullable
                 
@@ -145,12 +212,25 @@ if __name__ == '__main__':
     g = Grammar()
     if len(sys.argv[1:]):
         with open(sys.argv[1], 'r') as f:
-            lines = f.readlines()
-            for line in lines: 
-                g.addRule(line.strip())
+            g.buildGrammar(f)
+            g.buildParseTable()
+         #   inputstring = input("Enter a string to check (empty string to quit): ")
+         #   while inputstring:
+         #       trace = stacktrace.run_stacktrace(g, inputstring)
+         #       stacktrace.printtrace(trace, 1)
+         #       inputstring = input("Enter a string to check (empty string to quit): ")
     else:             
-        g.prompt()    
+        g.prompt()
+        g.buildGrammar()
+        g.buildParseTable()
 
     # test follows
+    #print("grammar ", g.grammar)
+    print("Terminals  ", g.terminals)
     for term in g.grammar.keys():
-        print("IsNullable({0}) = ".format(term), g.isNullable(term))
+        print(term, "->", g.grammar[term])
+        print("First({0}) = ".format(term), g.firstsets[term])
+       # print("Parsetable =", g.parseTable[term])
+        print("Follows({0}) = ".format(term), g.followsets[term])
+       # print("IsNullable({0}) = ".format(term), g.isNullable(term))
+        print()

@@ -48,7 +48,10 @@ def run_stacktrace(grammar, inputstring):
             steps.append((inputstring, ''.join(stack[::-1])))
         else:
             print([i for i in stack], inputstring)
+            print("before stack is", stack)
             top = stack.pop()
+            print("after stack is", stack)
+            print("top is", top)
             try:
                 stack.extend(list(grammar.parseTable[top][inputstring[0]])[::-1])
                 steps.append((inputstring, ''.join(stack[::-1])))
@@ -58,6 +61,12 @@ def run_stacktrace(grammar, inputstring):
             except KeyError:
                 steps.append((inputstring, "error"))
                 break
+            try:
+                grammar.parseTable[top]
+                print(inputstring[0], "not in stack")
+            except KeyError:
+                print("keyerror on", top)
+
     return steps 
 # prints the stacktrace in a pretty readable way, data is a list of 2-tuples
 # corresponding (1) input, and (2) current stack, the default parameter delay
