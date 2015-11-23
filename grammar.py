@@ -1,6 +1,7 @@
 from collections import OrderedDict
 from functools import reduce
 import sys
+import stacktrace
 
 class Grammar:
 #terminals = ["+*$"]
@@ -79,19 +80,26 @@ class Grammar:
         return self
 
     def buildParseTable(self):
-        for (nonterminal,production) in self.grammar.items():
-            for terminal in self.first(nonterminal):
-                try:
-                    self.parseTable[nonterminal]
-                    try: 
-                        self.parseTable[nonterminal][terminal]
-                        print("conflict in parse table")
-                        sys.exit(-1)
+        for (nonterminal,productions) in self.grammar.items():
+            for prod in productions:
+                for terminal in self.firstOfProduction(prod):
+                    if terminal == "":
+                        for term in follows(nonterminal):
+                            # add nonterminal -> prod for all term
+                            # if "" is in first(nonterminal) and $ is in follows(nonterminal)
+                                # add nonterminal -> prod for $
+                            pass
+                    try:
+                        self.parseTable[nonterminal]
+                        try: 
+                            self.parseTable[nonterminal][terminal]
+                            print("conflict in parse table")
+                            sys.exit(-1)
+                        except KeyError:
+                            self.parseTable[nonterminal][terminal] = prod
                     except KeyError:
-                        self.parseTable[nonterminal][terminal] = self.grammar[nonterminal]
-                except KeyError:
-                    self.parseTable[nonterminal] = dict()
-                    self.parseTable[nonterminal][terminal] = self.grammar[nonterminal]
+                        self.parseTable[nonterminal] = dict()
+                        self.parseTable[nonterminal][terminal] = prod
 
 
     # nonterminal -> ["production", "production"]
@@ -109,6 +117,9 @@ class Grammar:
                     # firstset and go to new production
                     if term in self.terminals:
                         firstset.add(term)
+                    # from the algo in the pdf
+                    elif term == "":
+                        firstset.add(term)
                     else:
                         firstset.update(self.first(term))
                     break
@@ -116,7 +127,7 @@ class Grammar:
         #    self.firstsets[var] = firstset
         return firstset      
 
-    def firstOfProduction(self, production):
+    def firstOfProduction(self, prod):
         """Works on right hand side of production."""
         firstset = set()
         for term in prod:
@@ -194,6 +205,11 @@ if __name__ == '__main__':
         with open(sys.argv[1], 'r') as f:
             g.buildGrammar(f)
             g.buildParseTable()
+            inputstring = input("Enter a string to check (empty string to quit): ")
+            while inputstring:
+                trace = stacktrace.run_stacktrace(g, inputstring)
+                stacktrace.printtrace(trace, 1)
+                inputstring = input("Enter a string to check (empty string to quit): ")
     else:             
         g.prompt()
         g.buildGrammar()
