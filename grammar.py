@@ -98,11 +98,11 @@ class Grammar:
         try:
             self.parseTable[nonterminal]
             try: 
-                self.parseTable[nonterminal][terminal]
-                print("conflict in parse table when adding")
-                print("nonterm", nonterminal, "terminal", terminal)
-                print(self.parseTable)
-                sys.exit(-1)
+                if self.parseTable[nonterminal][terminal] != prod:
+                    print("conflict in parse table when adding")
+                    print("nonterm", nonterminal, "terminal", terminal, "production", prod)
+                    print(self.parseTable)
+                    sys.exit(-1)
             except KeyError:
                 self.parseTable[nonterminal][terminal] = prod
         except KeyError:
@@ -221,11 +221,11 @@ if __name__ == '__main__':
         with open(sys.argv[1], 'r') as f:
             g.buildGrammar(f)
             g.buildParseTable()
-         #   inputstring = input("Enter a string to check (empty string to quit): ")
-         #   while inputstring:
-         #       trace = stacktrace.run_stacktrace(g, inputstring)
-         #       stacktrace.printtrace(trace, 1)
-         #       inputstring = input("Enter a string to check (empty string to quit): ")
+            inputstring = input("Enter a string to check (empty string to quit): ")
+            while inputstring:
+                trace = stacktrace.run_stacktrace(g, inputstring)
+                stacktrace.printtrace(trace, 1)
+                inputstring = input("Enter a string to check (empty string to quit): ")
     else:             
         g.prompt()
         g.buildGrammar()
@@ -237,7 +237,7 @@ if __name__ == '__main__':
     for term in g.grammar.keys():
         print(term, "->", g.grammar[term])
         print("First({0}) = ".format(term), g.firstsets[term])
-       # print("Parsetable =", g.parseTable[term])
+        print("Parsetable =", g.parseTable[term])
         print("Follows({0}) = ".format(term), g.followsets[term])
-       # print("IsNullable({0}) = ".format(term), g.isNullable(term))
+        print("IsNullable({0}) = ".format(term), g.isNullable(term))
         print()
