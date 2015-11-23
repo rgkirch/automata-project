@@ -1,7 +1,9 @@
 S -> E$
 A -> +TA
+A ->
 E -> TA
 B -> *FB
+B ->
 T -> FB
 F -> (E)
 F-> x

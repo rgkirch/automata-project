@@ -1,13 +1,24 @@
+import sys, time
 import grammar
-import time
 
 # representation of LL(1) parse table, for testing purposes
-exampleParseTable = { "E" : {"(" : "TY", "n" : "TY"},
+exampleParseTable1 = { 
+        "E" : {"(" : "TY", "n" : "TY"},
         "Y" : {"+" : "+TY", ")" : "", "$" : ""},
         "T" : {"(" : "FX", "n" : "FX"},
         "X" : {"+" : "", "*" : "*FX", ")" : "", "$" : ""},
-        "F" : {"(" : "(E)", "n" : "n"}}
-
+        "F" : {"(" : "(E)", "n" : "n"}
+        }
+startSymbol1 = 'E'
+terminals1 = ['+', '*', '(', ')', 'n', '$']
+exampleParseTable2 = { 
+        "S" : {"0" : "E"},
+        "E" : {"0" : "TA"},
+        "A" : {"+" : "+TA", "$" : ""},
+        "T" : {"0" : "0"}
+        }
+startSymbol2 = 'S'
+terminals2 = ['+', '0', '$']
 # Given a string, and an LL(1) parse table, determine if the string is in the
 # given language, returns a list of of tuples, where each tuple contains
 # (1) the remaining input string (2) current state the stack or an accept, or
@@ -26,7 +37,11 @@ def run_stacktrace(grammar, inputstring):
     # track of the state of the stack and input string at each step
     steps = [(inputstring, ''.join(stack[::-1]))] 
     while True: 
+        #print("stack", stack)
+        #print("input", inputstring)
         if not stack and inputstring[0] == '$':
+            steps.pop()
+            steps.append((inputstring, 'accept'))
             break
         # if currentsym == ToS pop sym of stack and advance one sym
         if inputstring[0] == stack[-1]:
@@ -46,11 +61,13 @@ def run_stacktrace(grammar, inputstring):
                 steps.append((inputstring, "error"))
                 break
             except KeyError:
-                try:
-                    grammar.parseTable[top]
-                    print(inputstring[0], "not in stack")
-                except KeyError:
-                    print("keyerror on", top)
+                steps.append((inputstring, "error"))
+                break
+            try:
+                grammar.parseTable[top]
+                print(inputstring[0], "not in stack")
+            except KeyError:
+                print("keyerror on", top)
 
     return steps 
 # prints the stacktrace in a pretty readable way, data is a list of 2-tuples
@@ -67,9 +84,9 @@ def printtrace(steps, delay=0):
     for i in steps[:-1]:
         print("{0:<{1}} | {2:^4} | {3}".format(i[0], input_colwidth, count, i[1]))
         count += 1
-        time.sleep(1)
+        time.sleep(delay)
     
-    print("{0:<{1}} | {2:^4} | accept".format(i[0], input_colwidth, count))
+    print("{0:<{1}} | {2:^4} | {3}".format(steps[-1][0], input_colwidth, count, steps[-1][1]))
 
 def prompt():
     print("Determine if a string is in a given LL(1) grammar")
@@ -77,11 +94,23 @@ def prompt():
 if __name__ == "__main__":
     prompt()
     g = grammar.Grammar()
-    g.parseTable = exampleParseTable
-    g.startSymbol = 'E'
-    g.terminals = ['+', '*', '(', ')', 'n', '$']
-    inputstring = input("Enter a string to check (empty string to quit): ")
-    while inputstring:
-        trace = run_stacktrace(g, inputstring)
-        printtrace(trace, 1)
+    if len(sys.argv[1:]):
+        with open(sys.argv[1], 'r') as f:
+            g.buildGrammar(f)
+            g.buildParseTable()
+            inputstring = input("Enter a string to check (empty string to quit): ")
+            while inputstring:
+                trace = run_stacktrace(g, inputstring)
+                printtrace(trace, 0)
+                inputstring = input("Enter a string to check (empty string to quit): ")
+    else:
+        g.buildGrammar()
+        g.buildParseTable()
+        #g.parseTable = exampleParseTable2
+        #g.startSymbol = startSymbol2
+        #g.terminals = terminals2
         inputstring = input("Enter a string to check (empty string to quit): ")
+        while inputstring:
+            trace = run_stacktrace(g, inputstring)
+            printtrace(trace, 0)
+            inputstring = input("Enter a string to check (empty string to quit): ")
