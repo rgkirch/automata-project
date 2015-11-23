@@ -5,7 +5,16 @@ import stacktrace
 import copy
 
 class Grammar:
-    
+#terminals = ["+*$"]
+#rules = \
+#{
+#    "S":["E$"],
+#    "A":["+TA"],
+#    "E":["TA"],
+#    "B":["*FB"],
+#    "T":["FB"],
+#    "F":["(E)", "x"]
+#}
     def __init__(self):
         self.grammar = OrderedDict()
         self.terminals = []
@@ -79,10 +88,9 @@ class Grammar:
                 self.addRule(ruleInput)
                 ruleInput = input("> ").strip()
 
-        for (nonterm,prods) in self.grammar.items():
-            print(nonterm)
-            self.firstsets[nonterm] = self.first(nonterm) 
-            self.followsets[nonterm] = set()
+        for key in self.grammar.keys():
+            self.firstsets[key] = self.first(key) 
+            self.followsets[key] = set()
 
         self.follows()               
  
@@ -126,7 +134,7 @@ class Grammar:
         firstset = set()
         for prod in self.grammar[var]: 
             for term in prod:
-                if self.isNullable(term,[term]):
+                if self.isNullable(term):
                     firstset.update(self.first(term))
                 else:
 		    # if term is terminal then add term to
@@ -142,7 +150,7 @@ class Grammar:
         """Works on right hand side of production."""
         firstset = set()
         for term in prod:
-            if self.isNullable(term,[]):
+            if self.isNullable(term):
                 firstset.update(self.first(term))
             else:
                 # if term is terminal then add term to
@@ -167,11 +175,8 @@ class Grammar:
 			# if char is nonterminal
                         if char in self.grammar:
                             curr = i+1
-                            # if next sym is nonterminal
-                            if self.isNullable(prod[curr],[]):
-                                # if curr char is 2nd to last nonterm
-                                if char == prod[-2]: 
-                                    # add follow sets of A in A -> aBC, if char == B and C is nullable
+                            if self.isNullable(prod[curr]):
+                                if char == prod[-2]:
                                     self.followsets[char].update(self.followsets[key])
                                 self.followsets[char].update(self.followsets[prod[curr]])
                                 self.followsets[char].update(self.firstsets[prod[curr]])
@@ -183,14 +188,15 @@ class Grammar:
                                 else:
                                     # else if its a terminal, simply add to follows
                                     self.followsets[char].add(prod[curr])
-  
-                    if lenProd > 0 and prod[-1] in self.grammar:
+                    # if last symbol in production is nonterminal
+                    if prod and prod[-1] in self.grammar:
+                        # add follows of lhs to follows of 
                         self.followsets[prod[-1]].update(self.followsets[key])
             # if no changes were made, break out of loop
             if currfollows == self.followsets:
                 break
    
-    def isNullable(self, var, seen):
+    def isNullable(self, var):
         if var in self.terminals:
             return False
         
@@ -201,19 +207,20 @@ class Grammar:
             # if prod is epsilon, nullable
             if prod != '':
                 for term in prod:
-                    if term not in seen:
-                        isProdNull = isProdNull and self.isNullable(term, seen+[term])
-                    if not isProdNull:  
-                        break
+                    if term != var:
+                        isProdNull = isProdNull and self.isNullable(term)
+                    else:
+                        prodsWithoutVar = filter(lambda x: term not in x, self.grammar[var]) 
+                        isProdNull = isProdNull and reduce(lambda x,y: x and y, map(self.isProductionNullable, prodsWithoutVar),True)
             isTermNullable = isTermNullable or isProdNull
         return isTermNullable
-                
-    def isProductionNullable(self,prod,lhs):
-        isProdNull = True
+ 
+    def isProductionNullable(self, prod):
+        isNullable = True
         for sym in prod:
-            if lhs not in prod:
-                isProdNull = isProdNull and self.isNullable(sym,[])
-        return isProdNull       
+            isNullable = isNullable and self.isNullable(sym)
+        return isNullable
+
 
     def __str__(self):
         rules = []
