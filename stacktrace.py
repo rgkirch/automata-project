@@ -37,8 +37,6 @@ def run_stacktrace(grammar, inputstring):
     # track of the state of the stack and input string at each step
     steps = [(inputstring, ''.join(stack[::-1]))] 
     while True: 
-        #print("stack", stack)
-        #print("input", inputstring)
         if not stack and inputstring[0] == '$':
             steps.pop()
             steps.append((inputstring, 'accept'))
@@ -49,11 +47,7 @@ def run_stacktrace(grammar, inputstring):
             inputstring = inputstring[1:]
             steps.append((inputstring, ''.join(stack[::-1])))
         else:
-            print([i for i in stack], inputstring)
-            print("before stack is", stack)
             top = stack.pop()
-            print("after stack is", stack)
-            print("top is", top)
             try:
                 stack.extend(list(grammar.parseTable[top][inputstring[0]])[::-1])
                 steps.append((inputstring, ''.join(stack[::-1])))
@@ -65,7 +59,6 @@ def run_stacktrace(grammar, inputstring):
                 break
             try:
                 grammar.parseTable[top]
-                print(inputstring[0], "not in stack")
             except KeyError:
                 print("keyerror on", top)
 
