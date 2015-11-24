@@ -5,16 +5,6 @@ import stacktrace
 import copy
 
 class Grammar:
-#terminals = ["+*$"]
-#rules = \
-#{
-#    "S":["E$"],
-#    "A":["+TA"],
-#    "E":["TA"],
-#    "B":["*FB"],
-#    "T":["FB"],
-#    "F":["(E)", "x"]
-#}
     def __init__(self):
         self.grammar = OrderedDict()
         self.terminals = []
@@ -93,7 +83,8 @@ class Grammar:
             self.followsets[key] = set()
 
         self.follows()               
- 
+        # print grammar after construction
+        print(self,"\n")
         return self
 
     def buildParseTable(self):
@@ -118,7 +109,7 @@ class Grammar:
                     print("conflict in parse table when adding")
                     print("nonterm", nonterminal, "terminal", terminal, "production", prod)
                     print(self.parseTable)
-                    sys.exit(-1)
+                    # sys.exit(-1)
             except KeyError:
                 self.parseTable[nonterminal][terminal] = prod
         except KeyError:
@@ -132,20 +123,22 @@ class Grammar:
            compiles a new string that holds all of the possible terminal \\
            characters. Returns empty string if not non nullable."""
         firstset = set()
-        for prod in self.grammar[var]: 
+        for prod in self.grammar[var]:
             for term in prod:
-                if self.isNullable(term):
+                if term != var and self.isNullable(term):
                     firstset.update(self.first(term))
                 else:
 		    # if term is terminal then add term to
                     # firstset and go to new production
                     if term in self.terminals:
                         firstset.add(term)
-                    else:
+                    elif term != var:
                         firstset.update(self.first(term))
                     break
         return firstset      
 
+    # this function has an error when used on recursive grammars
+    # ie A -> Aa | b, not going to fix, try on "exGram2.txt"
     def firstOfProduction(self, prod):
         """Works on right hand side of production."""
         firstset = set()
@@ -205,13 +198,9 @@ class Grammar:
         for i,prod in enumerate(self.grammar[var]):
             isProdNull = True 
             # if prod is epsilon, nullable
-            if prod != '':
+            if prod != '' and var not in prod:
                 for term in prod:
-                    if term != var:
-                        isProdNull = isProdNull and self.isNullable(term)
-                    else:
-                        prodsWithoutVar = filter(lambda x: term not in x, self.grammar[var]) 
-                        isProdNull = isProdNull and reduce(lambda x,y: x and y, map(self.isProductionNullable, prodsWithoutVar),True)
+                    isProdNull = isProdNull and self.isNullable(term)
             isTermNullable = isTermNullable or isProdNull
         return isTermNullable
  
@@ -221,13 +210,12 @@ class Grammar:
             isNullable = isNullable and self.isNullable(sym)
         return isNullable
 
-
     def __str__(self):
         rules = []
         for (key,val) in self.grammar.items():
             rule = key + " -> " + ' | '.join(self.grammar[key])
             rules.append(rule)
-        return "Grammar\n   {0}".format("\n   ".join(rules))         
+        return "\nGrammar:\n   {0}".format("\n   ".join(rules))         
          
 
 if __name__ == '__main__':
@@ -236,6 +224,7 @@ if __name__ == '__main__':
         with open(sys.argv[1], 'r') as f:
             g.buildGrammar(f)
             g.buildParseTable()
+            g.printParseTable()
             inputstring = input("Enter a string to check (empty string to quit): ")
             while inputstring:
                 trace = stacktrace.run_stacktrace(g, inputstring)
@@ -246,12 +235,10 @@ if __name__ == '__main__':
         g.buildGrammar()
         g.buildParseTable()
 
-    print("Terminals  ", g.terminals)
-    for term in g.grammar.keys():
-        print(term, "->", g.grammar[term])
-        print("First({0}) = ".format(term), g.firstsets[term])
-        print("Parsetable =", g.parseTable[term])
-        print("Follows({0}) = ".format(term), g.followsets[term])
-        print("IsNullable({0}) = ".format(term), g.isNullable(term))
-        print()
-    g.printParseTable()
+    ## TESTING ##
+    #for term in g.grammar.keys():
+        #print("First({0}) = ".format(term), g.firstsets[term])
+        #print("Parsetable =", g.parseTable[term])
+        #print("Follows({0}) = ".format(term), g.followsets[term])
+        #print("IsNullable({0}) = ".format(term), g.isNullable(term))
+        #print()
