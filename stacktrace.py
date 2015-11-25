@@ -91,6 +91,7 @@ if __name__ == "__main__":
         with open(sys.argv[1], 'r') as f:
             g.buildGrammar(f)
             g.buildParseTable()
+            g.printParseTable()
             inputstring = input("Enter a string to check (empty string to quit): ")
             while inputstring:
                 trace = run_stacktrace(g, inputstring)
